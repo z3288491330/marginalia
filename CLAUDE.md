@@ -18,7 +18,8 @@
 - **管理后台已完成并验证（2026-06-22）**：`/admin`（未登录跳 `/admin/login`），密码取 `ADMIN_PASSWORD`（`.env.local` 现为临时密码 `marginalia-2026`，**上线前须改**），httpOnly cookie 存密码派生令牌。功能：待审投稿通过/驳回、删书（级联删评论）、删评论（级联删楼中楼）。审核流端到端测试通过（投稿→待审不可见→登录→通过→前台可见→删除）。代码见 `lib/auth.ts`、`app/admin/*`、`app/api/admin/*`、`components/AdminPanel.tsx`。
 - **打底书目已扩充（2026-06-22）**：精选中外文学经典写入 `scripts/seed.ts`（已改为按书名幂等插入，可反复跑只补新书），库中现共 75 本（小说 51 / 戏剧 10 / 诗歌 6 / 随笔 5 / 散文 3），用到 29 个主题；`lib/taxonomy.ts` 主题色已补到 32 个。
 - **服务端频率限制已落地（2026-06-22）**：`lib/ratelimit.ts` 改为数据库持久化（`rate_limits` 表 + Postgres 条件 upsert 原子限流，serverless 多实例可靠；IP 经 SHA-256 哈希不存明文）。评论 4s、投稿 10s 冷却，已测（连发第二条 429、隔时恢复 200）。**第 3 项剩 Turnstile 人机验证**——需用户的 Cloudflare 密钥，留到部署时接。
-- **下一步**：第 3 防刷收尾（Turnstile，需 Cloudflare 密钥）、第 5 封面服务升级（前置豆瓣 + 缓存）。目录尚未 git init（可 git init → 推 GitHub → 接 Vercel 部署，环境变量设 `DATABASE_URL` 与 `ADMIN_PASSWORD`）。
+- **已上线（2026-06-22）🎉**：托管在 **Netlify** → https://marginalia-books.netlify.app （Vercel 因账号风控验证卡住，改用 Netlify）。GitHub 仓库 https://github.com/z3288491330/marginalia （public，main）。Netlify 已连 GitHub，**push 到 main 自动重新部署**。环境变量 `DATABASE_URL`、`ADMIN_PASSWORD` 在 Netlify 后台配置。线上已验证：首页/书详情/书目 API(115 本)/后台鉴权跳转/发评论写库 全部正常。
+- **下一步（可选）**：第 3 防刷收尾（Turnstile，需 Cloudflare 站点密钥）、第 5 封面服务升级。日常加书：改 `scripts/seed.ts` 的 `SEED_BOOKS` 后本地 `npm run db:seed`（直连同一 Neon 库，幂等）。
 
 完整开发/部署说明见 `README.md`。
 
