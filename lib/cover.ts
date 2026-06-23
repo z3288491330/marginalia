@@ -1,28 +1,122 @@
-// 封面自动查找（Open Library，免费无 key）。英文书为主，中文书常查不到——
-// 查不到就返回 null，由前端用主题色生成的排版封面兜底（见 Cover 组件）。
-// 后续第 5 步可在此前置豆瓣源、加缓存。
-export async function fetchCover(
+// 封面查找：用 Google Books API（需环境变量 GOOGLE_BOOKS_KEY，且服务器能访问 Google，如香港 VPS）。
+// 关键：精确查询 intitle/inauthor + 优先中文版，并校验书名/作者对得上，避免配错封面。
+// 没 key、查不到、或对不上 → 返回 null，前端用主题色生成封面兜底。
+import { mkdir, writeFile, rm } from "node:fs/promises";
+import path from "node:path";
+
+const COVER_BASE = process.env.COVER_BASE || "https://marginalia-books.cn";
+
+type ImageLinks = {
+  smallThumbnail?: string;
+  thumbnail?: string;
+  small?: string;
+  medium?: string;
+  large?: string;
+  extraLarge?: string;
+};
+type Volume = {
+  volumeInfo?: { title?: string; authors?: string[]; imageLinks?: ImageLinks };
+};
+type GBResp = { error?: { message: string }; items?: Volume[] };
+
+function norm(s: string): string {
+  return (s || "")
+    .toLowerCase()
+    .replace(/[\s《》「」“”‘’()（）【】[\]·.,，。:：!！?？'"\-—~]/g, "");
+}
+// 去掉副标题/版本括注，取主标题
+function stripSub(title: string): string {
+  return (title || "").split(/[（(:：—]/)[0];
+}
+function titleMatches(our: string, their: string): boolean {
+  const a = norm(our);
+  const b = norm(stripSub(their));
+  if (!a || !b) return false;
+  return a === b || b.startsWith(a) || a.startsWith(b);
+}
+function authorMatches(our: string, theirs: string[]): boolean {
+  if (!our) return true; // 没作者就不卡作者
+  const a = norm(our);
+  return (theirs || []).some((t) => {
+    const n = norm(t);
+    return !!n && (n.includes(a) || a.includes(n));
+  });
+}
+function bestImage(l: ImageLinks): string | null {
+  return (
+    l.extraLarge || l.large || l.medium || l.small || l.thumbnail || l.smallThumbnail || null
+  );
+}
+
+async function queryGB(key: string, q: string, lang?: string): Promise<Volume[]> {
+  let url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(
+    q
+  )}&maxResults=10&country=US&key=${key}`;
+  if (lang) url += `&langRestrict=${lang}`;
+  const r = await fetch(url, { signal: AbortSignal.timeout(6000) });
+  if (!r.ok) return [];
+  const j = (await r.json()) as GBResp;
+  return j.items || [];
+}
+
+// 找封面图地址（校验书名/作者匹配）。无 key / 没匹配 → null。
+export async function findCoverUrl(
   title: string,
-  author?: string
+  author: string
 ): Promise<string | null> {
-  try {
-    const q = new URLSearchParams({
-      title: title || "",
-      limit: "1",
-      fields: "cover_i",
-    });
-    if (author) q.set("author", author);
-    const r = await fetch(`https://openlibrary.org/search.json?${q}`, {
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!r.ok) return null;
-    const j = (await r.json()) as { docs?: { cover_i?: number }[] };
-    const d = j.docs && j.docs[0];
-    if (d && d.cover_i) {
-      return `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg`;
+  const key = process.env.GOOGLE_BOOKS_KEY;
+  if (!key) return null;
+  const tries: { q: string; lang?: string }[] = [
+    { q: `intitle:${title} inauthor:${author}`, lang: "zh" },
+    { q: `intitle:${title} inauthor:${author}` },
+    { q: `intitle:${title}`, lang: "zh" },
+  ];
+  for (const t of tries) {
+    if (t.q.includes("inauthor:") && !author) continue;
+    let items: Volume[] = [];
+    try {
+      items = await queryGB(key, t.q, t.lang);
+    } catch {
+      continue;
     }
-  } catch {
-    /* 离线 / 被墙 / 查不到 → 交给生成封面兜底 */
+    for (const it of items) {
+      const vi = it.volumeInfo;
+      if (!vi?.imageLinks) continue;
+      if (!titleMatches(title, vi.title || "")) continue;
+      if (!authorMatches(author, vi.authors || [])) continue;
+      const img = bestImage(vi.imageLinks);
+      if (img) return img.replace(/^http:/, "https:").replace(/&edge=curl/g, "");
+    }
   }
   return null;
+}
+
+// 找封面并下载自存到 public/covers/<id>.jpg，返回可访问的绝对地址；任何失败 → null。
+export async function fetchAndStoreCover(
+  id: string,
+  title: string,
+  author: string
+): Promise<string | null> {
+  try {
+    const img = await findCoverUrl(title, author);
+    if (!img) return null;
+    const res = await fetch(img, { signal: AbortSignal.timeout(10000) });
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    const dir = path.join(process.cwd(), "public", "covers");
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, `${id}.jpg`), buf);
+    return `${COVER_BASE}/covers/${id}.jpg`;
+  } catch {
+    return null;
+  }
+}
+
+// 删除自存封面文件（重修时清理配错的）。
+export async function removeStoredCover(id: string): Promise<void> {
+  try {
+    await rm(path.join(process.cwd(), "public", "covers", `${id}.jpg`));
+  } catch {
+    /* 不存在就算了 */
+  }
 }

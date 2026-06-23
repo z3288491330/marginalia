@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { books } from "@/lib/db/schema";
 import { getApprovedBooks } from "@/lib/queries";
 import { GENRES } from "@/lib/taxonomy";
-import { fetchCover } from "@/lib/cover";
+import { fetchAndStoreCover } from "@/lib/cover";
 import { cooldown, rateKey } from "@/lib/ratelimit";
 
 // 列出已上架（approved）书目，附带每本的议论数（一次查询，避免前端 N+1）。
@@ -83,19 +83,29 @@ export async function POST(req: Request) {
     );
   }
 
-  // 投稿时顺手尝试抓封面（best-effort，失败无妨）。
-  const coverUrl = await fetchCover(title, author);
+  const inserted = await db
+    .insert(books)
+    .values({
+      title,
+      author,
+      synopsis,
+      genre: safeGenre,
+      themes,
+      sourceUrl,
+      status: "pending",
+    })
+    .returning({ id: books.id });
+  const newId = inserted[0].id;
 
-  await db.insert(books).values({
-    title,
-    author,
-    synopsis,
-    genre: safeGenre,
-    themes,
-    coverUrl,
-    sourceUrl,
-    status: "pending",
-  });
+  // 异步配封面：仅在配了 GOOGLE_BOOKS_KEY 且能访问 Google 的服务器（香港 VPS）上生效；
+  // 不 await，不拖慢投稿响应（长驻 Node 进程下后台会跑完）。
+  fetchAndStoreCover(newId, title, author)
+    .then((url) =>
+      url
+        ? db.update(books).set({ coverUrl: url }).where(eq(books.id, newId))
+        : null
+    )
+    .catch(() => {});
 
   return NextResponse.json({ ok: true, pending: true });
 }
