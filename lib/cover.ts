@@ -118,6 +118,32 @@ export async function fetchAndStoreCover(
   }
 }
 
+// 把指定图片地址下载并自存到 public/covers/<id>.jpg，返回绝对地址；失败返回 null。
+// 用于后台手动设封面（管理员粘贴图片地址）。
+export async function storeCoverFromUrl(
+  id: string,
+  url: string
+): Promise<string | null> {
+  try {
+    if (!/^https?:\/\//i.test(url)) return null;
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(10000),
+      headers: { "User-Agent": "Mozilla/5.0" },
+    });
+    if (!res.ok) return null;
+    const ct = res.headers.get("content-type") || "";
+    if (!ct.startsWith("image/")) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length < 100) return null; // 太小多半不是有效图片
+    const dir = path.join(process.cwd(), "public", "covers");
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, `${id}.jpg`), buf);
+    return `${COVER_BASE}/covers/${id}.jpg`;
+  } catch {
+    return null;
+  }
+}
+
 // 删除自存封面文件（重修时清理配错的）。
 export async function removeStoredCover(id: string): Promise<void> {
   try {

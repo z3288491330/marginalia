@@ -21,6 +21,7 @@ export default function AdminPanel({
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [err, setErr] = useState("");
+  const [coverInputs, setCoverInputs] = useState<Record<string, string>>({});
 
   const act = async (key: string, run: () => Promise<Response>) => {
     setBusyId(key);
@@ -66,6 +67,60 @@ export default function AdminPanel({
       }
       return res;
     });
+
+  const setCover = (id: string) => {
+    const url = (coverInputs[id] || "").trim();
+    if (!url) return;
+    act("cover:" + id, () =>
+      fetch(`/api/admin/books/${id}/cover`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      })
+    ).then(() => setCoverInputs((m) => ({ ...m, [id]: "" })));
+  };
+
+  const clearCover = (id: string) => {
+    if (!confirm("清除这本书的封面、改回生成封面？")) return;
+    act("cover:" + id, () =>
+      fetch(`/api/admin/books/${id}/cover`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: "" }),
+      })
+    );
+  };
+
+  // 手动设封面控件：粘贴图片地址 → 服务器下载自存。
+  const coverControl = (id: string, hasCover: boolean) => (
+    <div className="mg-formrow" style={{ marginTop: 8, gap: 8 }}>
+      <input
+        className="mg-input"
+        style={{ marginBottom: 0, maxWidth: 280, fontSize: 13 }}
+        placeholder="封面图片地址（粘贴后点设封面）"
+        value={coverInputs[id] || ""}
+        onChange={(e) =>
+          setCoverInputs((m) => ({ ...m, [id]: e.target.value }))
+        }
+      />
+      <button
+        className="mg-btn mg-btn-ghost"
+        onClick={() => setCover(id)}
+        disabled={busyId === "cover:" + id || !(coverInputs[id] || "").trim()}
+      >
+        设封面
+      </button>
+      {hasCover && (
+        <button
+          className="mg-reply-btn"
+          onClick={() => clearCover(id)}
+          disabled={busyId === "cover:" + id}
+        >
+          清除封面
+        </button>
+      )}
+    </div>
+  );
 
   const Pills = ({ themes }: { themes: string[] | null }) => (
     <div className="mg-pills" style={{ marginTop: 6 }}>
@@ -136,6 +191,7 @@ export default function AdminPanel({
                   驳回删除
                 </button>
               </div>
+              {coverControl(b.id, !!b.coverUrl)}
             </div>
           </div>
         ))
@@ -169,6 +225,7 @@ export default function AdminPanel({
                   删除
                 </button>
               </div>
+              {coverControl(b.id, !!b.coverUrl)}
             </div>
           </div>
         ))
