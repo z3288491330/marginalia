@@ -32,7 +32,7 @@ function titleMatches(our: string, their: string): boolean {
   const a = norm(our);
   const b = norm(stripSub(their));
   if (!a || !b) return false;
-  return a === b || b.startsWith(a) || a.startsWith(b);
+  return a === b || b.startsWith(a);
 }
 function authorMatches(our: string, theirs: string[]): boolean {
   if (!our) return true; // 没作者就不卡作者
@@ -79,14 +79,20 @@ export async function findCoverUrl(
     } catch {
       continue;
     }
-    for (const it of items) {
-      const vi = it.volumeInfo;
-      if (!vi?.imageLinks) continue;
-      if (!titleMatches(title, vi.title || "")) continue;
-      if (!authorMatches(author, vi.authors || [])) continue;
-      const img = bestImage(vi.imageLinks);
-      if (img) return img.replace(/^http:/, "https:").replace(/&edge=curl/g, "");
-    }
+    // 有图 + 书名对得上 的候选
+    const cands = items.filter(
+      (it) => it.volumeInfo?.imageLinks && titleMatches(title, it.volumeInfo.title || "")
+    );
+    if (cands.length === 0) continue;
+    // 优先书名完全相等的；再优先作者也对得上的（Google 作者常是罗马音/英文，对不上也接受）
+    const exact = cands.filter(
+      (it) => norm(stripSub(it.volumeInfo!.title || "")) === norm(title)
+    );
+    const pool = exact.length ? exact : cands;
+    const chosen =
+      pool.find((it) => authorMatches(author, it.volumeInfo!.authors || [])) || pool[0];
+    const img = bestImage(chosen.volumeInfo!.imageLinks!);
+    if (img) return img.replace(/^http:/, "https:").replace(/&edge=curl/g, "");
   }
   return null;
 }
