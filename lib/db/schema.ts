@@ -11,6 +11,8 @@ export const books = pgTable(
     themes: text("themes").array().notNull().default([]),
     synopsis: text("synopsis").notNull(),
     coverUrl: text("cover_url"),
+    sourceUrl: text("source_url"), // 正版阅读/购买链接（选填）
+
     status: text("status", { enum: ["pending", "approved"] })
       .notNull()
       .default("pending"),

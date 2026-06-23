@@ -47,6 +47,27 @@ export async function POST(req: Request) {
   if (author.length > 60) {
     return NextResponse.json({ error: "作者名过长" }, { status: 400 });
   }
+
+  // 正版链接（选填）：补全协议、校验是否为 http(s) 链接。
+  let sourceUrl: string | null = null;
+  if (typeof b.sourceUrl === "string" && b.sourceUrl.trim()) {
+    let u = b.sourceUrl.trim();
+    if (u.length > 500) {
+      return NextResponse.json({ error: "链接过长" }, { status: 400 });
+    }
+    if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+    try {
+      const parsed = new URL(u);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") throw new Error();
+      sourceUrl = u;
+    } catch {
+      return NextResponse.json(
+        { error: "正版链接格式不太对，检查一下或留空" },
+        { status: 400 }
+      );
+    }
+  }
+
   const safeGenre = (GENRES as readonly string[]).includes(genre) ? genre : "其他";
 
   // 重名检测：书名 + 作者都与库中已有的（含待审）相同，则直接提示已存在，不再进审核队列。
@@ -72,6 +93,7 @@ export async function POST(req: Request) {
     genre: safeGenre,
     themes,
     coverUrl,
+    sourceUrl,
     status: "pending",
   });
 

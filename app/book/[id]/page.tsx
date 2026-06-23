@@ -50,6 +50,18 @@ export default async function BookPage({
               ))}
             </div>
             <p className="mg-detail-syn">{book.synopsis}</p>
+            {book.sourceUrl && (
+              <p style={{ marginTop: 14 }}>
+                <a
+                  className="mg-source"
+                  href={book.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                >
+                  📖 去哪读这本书 →
+                </a>
+              </p>
+            )}
           </div>
         </div>
 

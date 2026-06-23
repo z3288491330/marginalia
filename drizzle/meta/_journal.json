@@ -15,6 +15,13 @@
       "when": 1782097040977,
       "tag": "0001_mature_marvel_apes",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782186511762,
+      "tag": "0002_famous_stingray",
+      "breakpoints": true
     }
   ]
 }

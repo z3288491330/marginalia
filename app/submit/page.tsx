@@ -8,6 +8,7 @@ export default function SubmitPage() {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [synopsis, setSynopsis] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
   const [genre, setGenre] = useState<string>("小说");
   const [picked, setPicked] = useState<string[]>([]);
   const [extraThemes, setExtraThemes] = useState<string[]>([]);
@@ -40,6 +41,7 @@ export default function SubmitPage() {
           title: title.trim(),
           author: author.trim(),
           synopsis: synopsis.trim(),
+          sourceUrl: sourceUrl.trim(),
           genre,
           themes: picked,
         }),
@@ -78,6 +80,7 @@ export default function SubmitPage() {
                 setTitle("");
                 setAuthor("");
                 setSynopsis("");
+                setSourceUrl("");
                 setGenre("小说");
                 setPicked([]);
                 setExtraThemes([]);
@@ -131,6 +134,13 @@ export default function SubmitPage() {
             value={synopsis}
             maxLength={300}
             onChange={(e) => setSynopsis(e.target.value)}
+          />
+          <input
+            className="mg-input"
+            placeholder="正版阅读 / 购买链接（选填，如微信读书、豆瓣、出版社）"
+            value={sourceUrl}
+            maxLength={500}
+            onChange={(e) => setSourceUrl(e.target.value)}
           />
 
           <p className="mg-aside-h" style={{ margin: "8px 0 10px" }}>

@@ -22,9 +22,29 @@ export default function RootLayout({
                   页边<small>MARGINALIA</small>
                 </div>
               </Link>
-              <Link href="/submit" className="mg-btn">
-                + 投一本书
-              </Link>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 12,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <a
+                  href="mailto:zhe99778@outlook.com?subject=%E9%A1%B5%E8%BE%B9%E7%BD%91%E7%AB%99%E5%BB%BA%E8%AE%AE"
+                  style={{
+                    fontFamily: "ui-monospace, monospace",
+                    fontSize: 12.5,
+                    letterSpacing: ".06em",
+                    color: "#C4CFBA",
+                  }}
+                >
+                  ✉ 提建议
+                </a>
+                <Link href="/submit" className="mg-btn">
+                  + 投一本书
+                </Link>
+              </div>
             </div>
             <div className="mg-epigraph">
               <p className="mg-epi-line">
@@ -41,6 +61,14 @@ export default function RootLayout({
 
           <div className="mg-foot">
             无需登录 · 请友善讨论 · 所有议论公开可见
+            <br />
+            对页边有建议？欢迎来信{" "}
+            <a
+              href="mailto:zhe99778@outlook.com?subject=%E9%A1%B5%E8%BE%B9%E7%BD%91%E7%AB%99%E5%BB%BA%E8%AE%AE"
+              style={{ color: "var(--brass)" }}
+            >
+              zhe99778@outlook.com
+            </a>
           </div>
         </div>
       </body>
