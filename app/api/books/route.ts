@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { books } from "@/lib/db/schema";
 import { getApprovedBooks } from "@/lib/queries";
@@ -47,6 +48,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "作者名过长" }, { status: 400 });
   }
   const safeGenre = (GENRES as readonly string[]).includes(genre) ? genre : "其他";
+
+  // 重名检测：书名 + 作者都与库中已有的（含待审）相同，则直接提示已存在，不再进审核队列。
+  const dup = await db
+    .select({ id: books.id })
+    .from(books)
+    .where(and(eq(books.title, title), eq(books.author, author)))
+    .limit(1);
+  if (dup.length > 0) {
+    return NextResponse.json(
+      { error: "这本书已经在书架上啦，不用再投～" },
+      { status: 409 }
+    );
+  }
 
   // 投稿时顺手尝试抓封面（best-effort，失败无妨）。
   const coverUrl = await fetchCover(title, author);

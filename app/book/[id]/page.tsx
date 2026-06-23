@@ -19,7 +19,7 @@ export default async function BookPage({
   const comments = await getComments(id);
 
   return (
-    <div className="mg-shell" style={{ gridTemplateColumns: "1fr" }}>
+    <div className="mg-shell" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}>
       <main className="mg-main mg-fadein" style={{ maxWidth: 760 }}>
         <Link href="/" className="mg-back">
           ← 回到书架

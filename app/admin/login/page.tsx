@@ -34,7 +34,7 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="mg-shell" style={{ gridTemplateColumns: "1fr" }}>
+    <div className="mg-shell" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}>
       <main className="mg-main mg-fadein" style={{ maxWidth: 420 }}>
         <h1 className="mg-detail-title" style={{ marginBottom: 18 }}>
           管理后台

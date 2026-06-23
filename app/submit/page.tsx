@@ -59,7 +59,7 @@ export default function SubmitPage() {
 
   if (done) {
     return (
-      <div className="mg-shell" style={{ gridTemplateColumns: "1fr" }}>
+      <div className="mg-shell" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}>
         <main className="mg-main mg-fadein" style={{ maxWidth: 640 }}>
           <h1 className="mg-detail-title" style={{ marginBottom: 12 }}>
             投稿已收到
@@ -94,7 +94,7 @@ export default function SubmitPage() {
   }
 
   return (
-    <div className="mg-shell" style={{ gridTemplateColumns: "1fr" }}>
+    <div className="mg-shell" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}>
       <main className="mg-main mg-fadein" style={{ maxWidth: 640 }}>
         <Link href="/" className="mg-back">
           ← 取消

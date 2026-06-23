@@ -54,8 +54,8 @@ a { color: inherit; text-decoration: none; }
 .mg-btn:disabled { opacity:.5; cursor:default; }
 
 .mg-shell { max-width:1060px; margin:0 auto; padding:0 clamp(16px,5vw,56px);
-  display:grid; grid-template-columns:200px 1fr; gap:clamp(20px,4vw,52px); }
-@media(max-width:760px){ .mg-shell{ grid-template-columns:1fr; gap:0; } }
+  display:grid; grid-template-columns:200px minmax(0,1fr); gap:clamp(20px,4vw,52px); }
+@media(max-width:760px){ .mg-shell{ grid-template-columns:minmax(0,1fr); gap:0; } }
 
 .mg-aside { padding-top:34px; }
 @media(max-width:760px){ .mg-aside{ padding:18px 0 4px; } }

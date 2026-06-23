@@ -19,7 +19,7 @@ export default async function AdminPage() {
   ]);
 
   return (
-    <div className="mg-shell" style={{ gridTemplateColumns: "1fr" }}>
+    <div className="mg-shell" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}>
       <AdminPanel
         pending={pending}
         approved={approved}
