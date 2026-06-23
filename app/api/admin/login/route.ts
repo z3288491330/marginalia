@@ -5,8 +5,17 @@ import {
   adminToken,
   checkPassword,
 } from "@/lib/auth";
+import { cooldown, rateKey } from "@/lib/ratelimit";
 
 export async function POST(req: Request) {
+  // 按 IP 限制登录尝试频率，挡暴力破解（每 5 秒最多一次）。
+  if (!(await cooldown(rateKey(req, "admin-login"), 5_000))) {
+    return NextResponse.json(
+      { error: "尝试太频繁了，请稍候几秒再试" },
+      { status: 429 }
+    );
+  }
+
   if (!adminConfigured()) {
     return NextResponse.json(
       { error: "未配置管理员密码（请在 .env.local 设置 ADMIN_PASSWORD）" },
