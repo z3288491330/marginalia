@@ -18,7 +18,14 @@
 - **管理后台已完成并验证（2026-06-22）**：`/admin`（未登录跳 `/admin/login`），密码取 `ADMIN_PASSWORD`（`.env.local` 现为临时密码 `marginalia-2026`，**上线前须改**），httpOnly cookie 存密码派生令牌。功能：待审投稿通过/驳回、删书（级联删评论）、删评论（级联删楼中楼）。审核流端到端测试通过（投稿→待审不可见→登录→通过→前台可见→删除）。代码见 `lib/auth.ts`、`app/admin/*`、`app/api/admin/*`、`components/AdminPanel.tsx`。
 - **打底书目已扩充（2026-06-22）**：精选中外文学经典写入 `scripts/seed.ts`（已改为按书名幂等插入，可反复跑只补新书），库中现共 75 本（小说 51 / 戏剧 10 / 诗歌 6 / 随笔 5 / 散文 3），用到 29 个主题；`lib/taxonomy.ts` 主题色已补到 32 个。
 - **服务端频率限制已落地（2026-06-22）**：`lib/ratelimit.ts` 改为数据库持久化（`rate_limits` 表 + Postgres 条件 upsert 原子限流，serverless 多实例可靠；IP 经 SHA-256 哈希不存明文）。评论 4s、投稿 10s 冷却，已测（连发第二条 429、隔时恢复 200）。**第 3 项剩 Turnstile 人机验证**——需用户的 Cloudflare 密钥，留到部署时接。
-- **已上线（2026-06-22）🎉**：托管在 **Netlify** → https://marginalia-books.netlify.app （Vercel 因账号风控验证卡住，改用 Netlify）。GitHub 仓库 https://github.com/z3288491330/marginalia （public，main）。Netlify 已连 GitHub，**push 到 main 自动重新部署**。环境变量 `DATABASE_URL`、`ADMIN_PASSWORD` 在 Netlify 后台配置。线上已验证：首页/书详情/书目 API(115 本)/后台鉴权跳转/发评论写库 全部正常。
+- **已上线（2026-06-22）🎉**：两处部署，**同一个 Neon 库**：
+  - **Netlify**（HTTPS，国内需 VPN）→ https://marginalia-books.netlify.app ，连 GitHub，push 到 main 自动重新部署。
+  - **阿里云轻量·香港 VPS**（**自有域名 + HTTPS**，国内免 VPN 可直连，~37ms）→ **https://marginalia-books.cn**（含 www；http 自动 308 跳 https）。Ubuntu 24.04 / 2c2g，到期 2026-07-22（按月，到期不续即停，数据在 Neon 不丢）。
+- GitHub 仓库 https://github.com/z3288491330/marginalia （public，main）。
+- **域名/HTTPS**：`marginalia-books.cn` 在阿里云注册（.cn，已实名），DNS A 记录 @ 和 www → 8.217.78.100。VPS 上 **Caddy** 占 80/443、自动签发 Let's Encrypt 证书（自动续期）、反代到 127.0.0.1:3000；配置 `/etc/caddy/Caddyfile`（systemd 服务 caddy）。
+- **VPS 运维要点**：SSH `admin@8.217.78.100`（密钥在本机 `~/.ssh/marginalia_vps`，admin 免密 sudo）；代码 `/opt/marginalia`，pm2 进程 `marginalia` 跑在 **3000 端口**（Caddy 反代），systemd 开机自启。**更新线上**：本地 push → `ssh ... "sudo bash -c 'cd /opt/marginalia && git fetch origin main && git reset --hard origin/main && npm run build && pm2 restart marginalia'"`（Caddy 不用动）。环境变量在 `/opt/marginalia/.env.local`。
+- **已修**：登录 cookie 的 `secure` 改为按请求协议判断（X-Forwarded-Proto），HTTP/HTTPS 下都正常。全部线上已验证（首页/详情/115 本/后台登录+鉴权/发评论写库/HTTPS/跳转/www）。
+- **待办（可选）**：Turnstile 防刷未接（需 Cloudflare 密钥）；第 5 封面服务升级。
 - **下一步（可选）**：第 3 防刷收尾（Turnstile，需 Cloudflare 站点密钥）、第 5 封面服务升级。日常加书：改 `scripts/seed.ts` 的 `SEED_BOOKS` 后本地 `npm run db:seed`（直连同一 Neon 库，幂等）。
 
 完整开发/部署说明见 `README.md`。

@@ -15,8 +15,9 @@ export type BookListItem = {
 };
 
 // 已上架书目 + 每本议论数（供首页书架与 GET /api/books 共用）。
+// 按书名中文拼音 A→Z 排序（localeCompare zh 走 ICU，按拼音首字母、再次字母…比较），新书自动入列。
 export async function getApprovedBooks(): Promise<BookListItem[]> {
-  return db
+  const rows = await db
     .select({
       id: books.id,
       title: books.title,
@@ -31,8 +32,11 @@ export async function getApprovedBooks(): Promise<BookListItem[]> {
     .from(books)
     .leftJoin(comments, eq(comments.bookId, books.id))
     .where(eq(books.status, "approved"))
-    .groupBy(books.id)
-    .orderBy(desc(books.createdAt));
+    .groupBy(books.id);
+
+  return rows.sort((a, b) =>
+    a.title.localeCompare(b.title, "zh-Hans-CN-u-co-pinyin")
+  );
 }
 
 export async function getApprovedBook(id: string) {

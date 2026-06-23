@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Cover from "./Cover";
 import { GENRES, THEME_COLORS, DEFAULT_SPINE } from "@/lib/taxonomy";
@@ -9,6 +9,20 @@ import type { BookListItem } from "@/lib/queries";
 export default function Shelf({ books }: { books: BookListItem[] }) {
   const [theme, setTheme] = useState("全部");
   const [genre, setGenre] = useState("全部");
+
+  // 返回书架时恢复上次的滚动位置（点书前存，回来后还原），避免每次都跳回顶部。
+  useEffect(() => {
+    const saved = sessionStorage.getItem("shelfScroll");
+    if (saved) {
+      sessionStorage.removeItem("shelfScroll");
+      const y = parseInt(saved, 10);
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => window.scrollTo(0, y))
+      );
+    }
+  }, []);
+  const saveScroll = () =>
+    sessionStorage.setItem("shelfScroll", String(window.scrollY));
 
   const { usedThemes, themeCounts } = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -91,7 +105,12 @@ export default function Shelf({ books }: { books: BookListItem[] }) {
           </p>
         ) : (
           shown.map((b) => (
-            <Link key={b.id} href={`/book/${b.id}`} className="mg-book">
+            <Link
+              key={b.id}
+              href={`/book/${b.id}`}
+              className="mg-book"
+              onClick={saveScroll}
+            >
               <Cover book={b} variant="thumb" />
               <div className="mg-book-body">
                 <h3 className="mg-title">{b.title}</h3>
