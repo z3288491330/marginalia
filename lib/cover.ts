@@ -6,6 +6,11 @@ import path from "node:path";
 
 const COVER_BASE = process.env.COVER_BASE || "https://marginalia-books.cn";
 
+// 带版本号的封面地址：文件名不变（都是 <id>.jpg），靠 ?v=时间戳 让浏览器换图不吃旧缓存。
+function coverUrlFor(id: string): string {
+  return `${COVER_BASE}/covers/${id}.jpg?v=${Date.now()}`;
+}
+
 type ImageLinks = {
   smallThumbnail?: string;
   thumbnail?: string;
@@ -112,7 +117,7 @@ export async function fetchAndStoreCover(
     const dir = path.join(process.cwd(), "public", "covers");
     await mkdir(dir, { recursive: true });
     await writeFile(path.join(dir, `${id}.jpg`), buf);
-    return `${COVER_BASE}/covers/${id}.jpg`;
+    return coverUrlFor(id);
   } catch {
     return null;
   }
@@ -138,7 +143,7 @@ export async function storeCoverFromUrl(
     const dir = path.join(process.cwd(), "public", "covers");
     await mkdir(dir, { recursive: true });
     await writeFile(path.join(dir, `${id}.jpg`), buf);
-    return `${COVER_BASE}/covers/${id}.jpg`;
+    return coverUrlFor(id);
   } catch {
     return null;
   }
@@ -149,7 +154,7 @@ export async function storeCoverBytes(id: string, buf: Buffer): Promise<string> 
   const dir = path.join(process.cwd(), "public", "covers");
   await mkdir(dir, { recursive: true });
   await writeFile(path.join(dir, `${id}.jpg`), buf);
-  return `${COVER_BASE}/covers/${id}.jpg`;
+  return coverUrlFor(id);
 }
 
 // 删除自存封面文件（重修时清理配错的）。
