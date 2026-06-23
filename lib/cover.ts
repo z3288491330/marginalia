@@ -144,6 +144,14 @@ export async function storeCoverFromUrl(
   }
 }
 
+// 直接把上传的图片字节存到 public/covers/<id>.jpg，返回绝对地址。用于后台「上传封面」。
+export async function storeCoverBytes(id: string, buf: Buffer): Promise<string> {
+  const dir = path.join(process.cwd(), "public", "covers");
+  await mkdir(dir, { recursive: true });
+  await writeFile(path.join(dir, `${id}.jpg`), buf);
+  return `${COVER_BASE}/covers/${id}.jpg`;
+}
+
 // 删除自存封面文件（重修时清理配错的）。
 export async function removeStoredCover(id: string): Promise<void> {
   try {

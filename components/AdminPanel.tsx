@@ -91,6 +91,17 @@ export default function AdminPanel({
     );
   };
 
+  const uploadCover = (id: string, file: File | undefined) => {
+    if (!file) return;
+    act("cover:" + id, () =>
+      fetch(`/api/admin/books/${id}/cover`, {
+        method: "POST",
+        headers: { "Content-Type": file.type || "image/jpeg" },
+        body: file,
+      })
+    );
+  };
+
   // 手动设封面控件：粘贴图片地址 → 服务器下载自存。
   const coverControl = (id: string, hasCover: boolean) => (
     <div className="mg-formrow" style={{ marginTop: 8, gap: 8 }}>
@@ -110,6 +121,19 @@ export default function AdminPanel({
       >
         设封面
       </button>
+      <label
+        className="mg-btn mg-btn-ghost"
+        style={{ cursor: "pointer" }}
+      >
+        上传图片
+        <input
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          disabled={busyId === "cover:" + id}
+          onChange={(e) => uploadCover(id, e.target.files?.[0])}
+        />
+      </label>
       {hasCover && (
         <button
           className="mg-reply-btn"
