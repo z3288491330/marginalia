@@ -9,6 +9,8 @@ import type { BookListItem } from "@/lib/queries";
 export default function Shelf({ books }: { books: BookListItem[] }) {
   const [theme, setTheme] = useState("全部");
   const [genre, setGenre] = useState("全部");
+  const [query, setQuery] = useState("");
+  const [focused, setFocused] = useState(false);
 
   // 返回书架时恢复上次的滚动位置（点书前存，回来后还原），避免每次都跳回顶部。
   useEffect(() => {
@@ -33,10 +35,19 @@ export default function Shelf({ books }: { books: BookListItem[] }) {
     return { usedThemes: used, themeCounts: counts };
   }, [books]);
 
+  const q = query.trim().toLowerCase();
+  const matchQ = (b: BookListItem) =>
+    b.title.toLowerCase().includes(q) ||
+    (b.author || "").toLowerCase().includes(q);
+
+  // 搜索联想：跨全部书目匹配书名/作者，取前 8 条。
+  const suggestions = q ? books.filter(matchQ).slice(0, 8) : [];
+
   let shown = books;
   if (genre !== "全部") shown = shown.filter((b) => b.genre === genre);
   if (theme !== "全部")
     shown = shown.filter((b) => (b.themes || []).includes(theme));
+  if (q) shown = shown.filter(matchQ);
 
   return (
     <div className="mg-shell">
@@ -75,6 +86,49 @@ export default function Shelf({ books }: { books: BookListItem[] }) {
       </aside>
 
       <main className="mg-main mg-fadein" key={genre + "|" + theme}>
+        <div className="mg-search">
+          <input
+            className="mg-search-input"
+            type="text"
+            placeholder="搜书名或作者……"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setTimeout(() => setFocused(false), 150)}
+          />
+          {query && (
+            <button
+              className="mg-search-clear"
+              onClick={() => setQuery("")}
+              aria-label="清空"
+            >
+              ×
+            </button>
+          )}
+          {focused && q && (
+            <ul className="mg-suggest">
+              {suggestions.length === 0 ? (
+                <li className="mg-suggest-empty">没有匹配的书</li>
+              ) : (
+                suggestions.map((b) => (
+                  <li key={b.id}>
+                    <Link
+                      href={`/book/${b.id}`}
+                      className="mg-suggest-item"
+                      onClick={saveScroll}
+                    >
+                      <span className="mg-suggest-title">{b.title}</span>
+                      <span className="mg-suggest-meta">
+                        {b.author || "佚名"} · {b.genre}
+                      </span>
+                    </Link>
+                  </li>
+                ))
+              )}
+            </ul>
+          )}
+        </div>
+
         <div className="mg-genrebar">
           {["全部", ...GENRES].map((g) => (
             <button
