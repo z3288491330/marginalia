@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { books } from "@/lib/db/schema";
+import { books, comments } from "@/lib/db/schema";
 import { getApprovedBooks } from "@/lib/queries";
 import { GENRES } from "@/lib/taxonomy";
 import { fetchAndStoreCover } from "@/lib/cover";
@@ -37,6 +37,12 @@ export async function POST(req: Request) {
         .filter(Boolean)
         .slice(0, 12)
     : [];
+  // 投稿时可附带一条评论：通过审核后作为该书的第一条议论显示。
+  const comment = typeof b.comment === "string" ? b.comment.trim() : "";
+  const commentNickname =
+    typeof b.commentNickname === "string" && b.commentNickname.trim()
+      ? b.commentNickname.trim().slice(0, 24)
+      : "佚名";
 
   if (!title || title.length > 60) {
     return NextResponse.json({ error: "书名必填，且不超过 60 字" }, { status: 400 });
@@ -46,6 +52,9 @@ export async function POST(req: Request) {
   }
   if (author.length > 60) {
     return NextResponse.json({ error: "作者名过长" }, { status: 400 });
+  }
+  if (comment.length > 1200) {
+    return NextResponse.json({ error: "想法不超过 1200 字" }, { status: 400 });
   }
 
   // 正版链接（选填）：补全协议、校验是否为 http(s) 链接。
@@ -96,6 +105,17 @@ export async function POST(req: Request) {
     })
     .returning({ id: books.id });
   const newId = inserted[0].id;
+
+  // 附带的评论：现在就挂到这本（待审）书上，审核通过书页可见时自然显示；驳回删书时随级联删除。
+  if (comment) {
+    await db.insert(comments).values({
+      bookId: newId,
+      body: comment,
+      nickname: commentNickname,
+      parentId: null,
+      replyTo: null,
+    });
+  }
 
   // 异步配封面：仅在配了 GOOGLE_BOOKS_KEY 且能访问 Google 的服务器（香港 VPS）上生效；
   // 不 await，不拖慢投稿响应（长驻 Node 进程下后台会跑完）。

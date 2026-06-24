@@ -13,6 +13,8 @@ export default function SubmitPage() {
   const [picked, setPicked] = useState<string[]>([]);
   const [extraThemes, setExtraThemes] = useState<string[]>([]);
   const [customInput, setCustomInput] = useState("");
+  const [comment, setComment] = useState("");
+  const [commentNick, setCommentNick] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [done, setDone] = useState(false);
@@ -44,6 +46,8 @@ export default function SubmitPage() {
           sourceUrl: sourceUrl.trim(),
           genre,
           themes: picked,
+          comment: comment.trim(),
+          commentNickname: commentNick.trim(),
         }),
       });
       if (!res.ok) {
@@ -81,6 +85,8 @@ export default function SubmitPage() {
                 setAuthor("");
                 setSynopsis("");
                 setSourceUrl("");
+                setComment("");
+                setCommentNick("");
                 setGenre("小说");
                 setPicked([]);
                 setExtraThemes([]);
@@ -195,6 +201,29 @@ export default function SubmitPage() {
               + 添加主题
             </button>
           </div>
+
+          <p className="mg-aside-h" style={{ margin: "8px 0 10px" }}>
+            顺便留句想法（可选）
+          </p>
+          <p className="mg-empty" style={{ padding: "0 0 10px", fontSize: 14 }}>
+            写下你与这本书的故事或初读印象——书通过审核后，它会作为第一条议论显示，不用等审核完再回来写。
+          </p>
+          <textarea
+            className="mg-area"
+            rows={3}
+            placeholder="你的想法……"
+            value={comment}
+            maxLength={1200}
+            onChange={(e) => setComment(e.target.value)}
+          />
+          <input
+            className="mg-input"
+            style={{ maxWidth: 200 }}
+            placeholder="昵称（可不填）"
+            value={commentNick}
+            maxLength={24}
+            onChange={(e) => setCommentNick(e.target.value)}
+          />
 
           {err && <p className="mg-err" style={{ marginTop: 14 }}>{err}</p>}
 
