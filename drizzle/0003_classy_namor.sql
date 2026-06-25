@@ -1,0 +1,1 @@
+ALTER TABLE "books" ADD COLUMN "source" text DEFAULT 'seed' NOT NULL;

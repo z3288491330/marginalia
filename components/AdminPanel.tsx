@@ -13,10 +13,12 @@ export default function AdminPanel({
   pending,
   approved,
   recentComments,
+  monthly,
 }: {
   pending: Book[];
   approved: BookListItem[];
   recentComments: RecentComment[];
+  monthly: { count: number; month: number };
 }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -178,6 +180,10 @@ export default function AdminPanel({
 
       {err && <p className="mg-err">{err}</p>}
 
+      <p className="mg-count" style={{ marginBottom: 22 }}>
+        本月（{monthly.month} 月 1 日起）收到投稿 {monthly.count} 本
+      </p>
+
       {/* 待审投稿 */}
       <p className="mg-dh" style={{ borderTop: "none", paddingTop: 0 }}>
         待审投稿 · {pending.length}
@@ -239,6 +245,12 @@ export default function AdminPanel({
                 {b.genre}
                 <span className="sep">·</span>
                 {b.commentCount} 条议论
+                {b.source === "submission" && (
+                  <>
+                    <span className="sep">·</span>
+                    投稿于 {timeAgo(b.createdAt)}
+                  </>
+                )}
               </p>
               <div className="mg-formrow" style={{ marginTop: 8 }}>
                 <button

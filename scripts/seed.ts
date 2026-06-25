@@ -189,6 +189,7 @@ async function main() {
         synopsis: b.synopsis,
         coverUrl: null,
         status: "approved" as const,
+        source: "seed" as const,
       }))
     )
     .returning({ id: books.id, title: books.title });

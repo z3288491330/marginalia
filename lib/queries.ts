@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { books, comments, type Comment } from "@/lib/db/schema";
 
@@ -11,6 +11,7 @@ export type BookListItem = {
   synopsis: string;
   coverUrl: string | null;
   createdAt: Date;
+  source: string;
   commentCount: number;
 };
 
@@ -27,6 +28,7 @@ export async function getApprovedBooks(): Promise<BookListItem[]> {
       synopsis: books.synopsis,
       coverUrl: books.coverUrl,
       createdAt: books.createdAt,
+      source: books.source,
       commentCount: count(comments.id),
     })
     .from(books)
@@ -93,4 +95,25 @@ export async function getRecentComments(limit = 50): Promise<RecentComment[]> {
     .innerJoin(books, eq(comments.bookId, books.id))
     .orderBy(desc(comments.createdAt))
     .limit(limit);
+}
+
+// 本月（中国时区每月 1 号 00:00 起至今）收到的投稿数（source='submission'，含待审+已通过，不含已驳回删除的）。
+// 返回 { count, month }（month 为月份数字，用于展示）。
+export async function getMonthlySubmissions(): Promise<{
+  count: number;
+  month: number;
+}> {
+  // 计算「中国时区本月 1 号 00:00」对应的 UTC 瞬间
+  const chinaNow = new Date(Date.now() + 8 * 3600 * 1000);
+  const y = chinaNow.getUTCFullYear();
+  const m = chinaNow.getUTCMonth(); // 0-11
+  const monthStart = new Date(Date.UTC(y, m, 1, 0, 0, 0) - 8 * 3600 * 1000);
+
+  const rows = await db
+    .select({ c: count() })
+    .from(books)
+    .where(
+      and(eq(books.source, "submission"), gte(books.createdAt, monthStart))
+    );
+  return { count: Number(rows[0]?.c ?? 0), month: m + 1 };
 }

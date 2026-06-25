@@ -102,6 +102,7 @@ export async function POST(req: Request) {
       themes,
       sourceUrl,
       status: "pending",
+      source: "submission",
     })
     .returning({ id: books.id });
   const newId = inserted[0].id;

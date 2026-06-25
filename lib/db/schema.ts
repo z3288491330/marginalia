@@ -16,6 +16,10 @@ export const books = pgTable(
     status: text("status", { enum: ["pending", "approved"] })
       .notNull()
       .default("pending"),
+    // 来源：seed=我们自己添加的打底书；submission=网友投稿。用于后台显示投稿时间/统计。
+    source: text("source", { enum: ["seed", "submission"] })
+      .notNull()
+      .default("seed"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
